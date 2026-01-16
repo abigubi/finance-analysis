@@ -156,6 +156,28 @@ st.markdown("""
     .dataframe tbody tr:nth-child(even) {
         background-color: #252525 !important;
     }
+    /* Fix Streamlit dataframe component */
+    [data-testid="stDataFrame"] {
+        background-color: #1e1e1e !important;
+    }
+    [data-testid="stDataFrame"] table {
+        background-color: #1e1e1e !important;
+    }
+    [data-testid="stDataFrame"] thead {
+        background-color: #2e2e2e !important;
+    }
+    [data-testid="stDataFrame"] tbody {
+        background-color: #1e1e1e !important;
+    }
+    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+        border-color: #333 !important;
+    }
+    [data-testid="stDataFrame"] thead th {
+        background-color: #2e2e2e !important;
+        color: #fafafa !important;
+    }
     
     /* Expanders */
     .streamlit-expanderHeader {
@@ -166,6 +188,13 @@ st.markdown("""
     .streamlit-expanderContent {
         background-color: #1e1e1e !important;
         color: #fafafa !important;
+    }
+    /* Fix expander container background */
+    [data-testid="stExpander"] {
+        background-color: #1e1e1e !important;
+    }
+    [data-testid="stExpander"] > div {
+        background-color: #1e1e1e !important;
     }
     
     /* Info/Warning/Error messages */
@@ -233,6 +262,45 @@ st.markdown("""
     }
     .stDateInput [data-baseweb="popover"] {
         background-color: #1e1e1e !important;
+    }
+    .stDateInput [data-baseweb="input"] {
+        background-color: #1e1e1e !important;
+        border: 1px solid #333 !important;
+    }
+    .stDateInput [data-baseweb="input"] input {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    /* Fix calendar popup */
+    [data-baseweb="popover"] {
+        background-color: #1e1e1e !important;
+    }
+    [data-baseweb="calendar"] {
+        background-color: #1e1e1e !important;
+    }
+    /* Remove white squares for invalid dates */
+    [data-baseweb="calendar"] [aria-disabled="true"] {
+        background-color: transparent !important;
+        color: #666 !important;
+        visibility: hidden !important;
+    }
+    /* Calendar day cells */
+    [data-baseweb="calendar"] button {
+        background-color: #2e2e2e !important;
+        color: #fafafa !important;
+        border: 1px solid #333 !important;
+    }
+    [data-baseweb="calendar"] button:hover {
+        background-color: #3e3e3e !important;
+    }
+    [data-baseweb="calendar"] button[aria-selected="true"] {
+        background-color: #4CAF50 !important;
+        color: white !important;
+    }
+    /* Calendar header */
+    [data-baseweb="calendar"] [data-baseweb="select"] {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
     }
     
     /* Fix any remaining white backgrounds in containers */
@@ -761,7 +829,8 @@ def create_plotly_chart(ticker: str, df: pd.DataFrame, theme: dict) -> go.Figure
             x=1,
             bgcolor='rgba(0,0,0,0.5)' if theme["bg_color"] == "rgba(0,0,0,0)" else 'rgba(255,255,255,0.8)',
             bordercolor='rgba(255,255,255,0.2)' if theme["bg_color"] == "rgba(0,0,0,0)" else 'rgba(0,0,0,0.2)',
-            borderwidth=1
+            borderwidth=1,
+            font=dict(color=theme["text_color"], size=12)
         ),
         xaxis=dict(
             showgrid=True,
@@ -880,9 +949,9 @@ def main():
                 axis=1
             )
             display_df["Duration"] = display_df.apply(
-                lambda row: (row["cluster_end"] - row["cluster_start"]).days + 1 
+                lambda row: f"{(row['cluster_end'] - row['cluster_start']).days + 1} days" 
                 if pd.notna(row["cluster_start"]) and pd.notna(row["cluster_end"]) 
-                else 1, axis=1
+                else "1 day", axis=1
             )
             
             # Show table
@@ -984,9 +1053,9 @@ def main():
                         axis=1
                     )
                     display_df["Duration"] = display_df.apply(
-                        lambda row: (row["cluster_end"] - row["cluster_start"]).days + 1 
+                        lambda row: f"{(row['cluster_end'] - row['cluster_start']).days + 1} days" 
                         if pd.notna(row["cluster_start"]) and pd.notna(row["cluster_end"]) 
-                        else 1, axis=1
+                        else "1 day", axis=1
                     )
                     
                     # Show table
