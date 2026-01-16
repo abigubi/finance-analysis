@@ -14,29 +14,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with theme support
+# Custom CSS with comprehensive dark theme
 st.markdown("""
     <style>
-    /* Main app - will be overridden by theme */
+    /* Main app dark theme */
     .stApp {
-        background-color: #0e1117;
-        color: #fafafa;
+        background-color: #0e1117 !important;
+        color: #fafafa !important;
     }
     
-    /* Top bar styling */
-    .top-bar {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        background-color: #1e1e1e;
-        padding: 15px;
-        border-bottom: 2px solid #333;
-        margin-bottom: 20px;
-    }
-    
-    .top-bar.light {
-        background-color: #ffffff;
-        border-bottom: 2px solid #e0e0e0;
+    /* Main container */
+    .main .block-container {
+        background-color: #0e1117 !important;
+        color: #fafafa !important;
     }
     
     /* Header styling */
@@ -45,56 +35,150 @@ st.markdown("""
         font-weight: bold;
         color: #FFD700;
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
     .sub-header {
         font-size: 1.2rem;
         color: #888;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
     }
     
     /* Sidebar dark theme */
     .css-1d391kg {
-        background-color: #1e1e1e;
+        background-color: #1e1e1e !important;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #1e1e1e !important;
     }
     
     /* Metrics dark theme */
-    .metric-card {
-        background-color: #1e1e1e;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid #333;
-    }
     .stMetric {
-        background-color: #1e1e1e;
+        background-color: #1e1e1e !important;
+        border: 1px solid #333 !important;
+        padding: 10px !important;
+        border-radius: 5px !important;
+    }
+    .stMetric label {
+        color: #fafafa !important;
+    }
+    .stMetric [data-testid="stMetricValue"] {
+        color: #fafafa !important;
     }
     
     /* Text inputs */
     .stTextInput > div > div > input {
-        background-color: #1e1e1e;
-        color: #fafafa;
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+        border: 1px solid #333 !important;
+    }
+    .stTextInput label {
+        color: #fafafa !important;
+    }
+    
+    /* Selectbox (theme selector) */
+    .stSelectbox > div > div {
+        background-color: #1e1e1e !important;
+    }
+    .stSelectbox > div > div > select {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+        border: 1px solid #333 !important;
+    }
+    .stSelectbox label {
+        color: #fafafa !important;
+    }
+    /* Selectbox dropdown options */
+    .stSelectbox [data-baseweb="select"] {
+        background-color: #1e1e1e !important;
+    }
+    .stSelectbox [data-baseweb="popover"] {
+        background-color: #1e1e1e !important;
+    }
+    .stSelectbox [data-baseweb="menu"] {
+        background-color: #1e1e1e !important;
+    }
+    .stSelectbox [data-baseweb="option"] {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    .stSelectbox [data-baseweb="option"]:hover {
+        background-color: #2e2e2e !important;
+    }
+    
+    /* Date inputs */
+    .stDateInput > div > div > input {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+        border: 1px solid #333 !important;
+    }
+    .stDateInput label {
+        color: #fafafa !important;
     }
     
     /* Buttons */
     .stButton > button {
-        background-color: #4CAF50;
-        color: white;
-        border-radius: 5px;
+        background-color: #4CAF50 !important;
+        color: white !important;
+        border-radius: 5px !important;
+        border: none !important;
     }
     .stButton > button:hover {
-        background-color: #45a049;
+        background-color: #45a049 !important;
     }
     
     /* Dataframes */
     .dataframe {
-        background-color: #1e1e1e;
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    .dataframe thead {
+        background-color: #2e2e2e !important;
+        color: #fafafa !important;
+    }
+    .dataframe tbody tr {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    .dataframe tbody tr:nth-child(even) {
+        background-color: #252525 !important;
     }
     
     /* Expanders */
     .streamlit-expanderHeader {
-        background-color: #1e1e1e;
-        color: #fafafa;
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+        border: 1px solid #333 !important;
+    }
+    .streamlit-expanderContent {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    
+    /* Info/Warning/Error messages */
+    .stInfo {
+        background-color: #1e3a5f !important;
+        border-left: 4px solid #2196F3 !important;
+    }
+    .stWarning {
+        background-color: #5a3a1e !important;
+        border-left: 4px solid #FF9800 !important;
+    }
+    .stError {
+        background-color: #5a1e1e !important;
+        border-left: 4px solid #F44336 !important;
+    }
+    
+    /* All text should be readable */
+    p, div, span, h1, h2, h3, h4, h5, h6 {
+        color: #fafafa !important;
+    }
+    
+    /* Theme selector styling */
+    .theme-selector-container {
+        display: flex;
+        align-items: center;
+        height: 100%;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -535,27 +619,30 @@ def main():
     if 'top_bar_expanded' not in st.session_state:
         st.session_state.top_bar_expanded = True
     
-    # Top bar with theme selector on left
-    top_col1, top_col2 = st.columns([1, 10])
+    # Header with theme selector aligned with title
+    header_col1, header_col2, header_col3 = st.columns([1, 8, 1])
     
-    with top_col1:
+    with header_col1:
+        st.markdown('<div style="height: 60px; display: flex; align-items: center; padding-top: 10px;">', unsafe_allow_html=True)
         color_theme = st.selectbox(
-            "🎨",
+            "🎨 Color Theme",
             ["Dark Mode (Default)", "Blue Ocean", "Green Energy", "Purple Night"],
             index=0,
             help="Choose a color theme for the chart",
-            label_visibility="collapsed"
+            key="theme_selector"
         )
+        st.markdown('</div>', unsafe_allow_html=True)
     
-    with top_col2:
-        st.markdown("")  # Spacing
+    with header_col2:
+        # Title (centered, compact)
+        st.markdown('<h1 class="main-header" style="text-align: center; margin-bottom: 0.5rem; margin-top: 0;">📉 Falling Knife Detector</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-header" style="text-align: center; margin-bottom: 1rem;">Long-Term Bottom Detection & Panic Signal Analysis</p>', unsafe_allow_html=True)
+    
+    with header_col3:
+        st.markdown("")  # Empty space for balance
     
     # Get selected theme
     theme = get_color_theme(color_theme)
-    
-    # Title (centered, compact)
-    st.markdown('<h1 class="main-header" style="text-align: center; margin-bottom: 0.5rem;">📉 Falling Knife Detector</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header" style="text-align: center; margin-bottom: 1rem;">Long-Term Bottom Detection & Panic Signal Analysis</p>', unsafe_allow_html=True)
     
     # Collapsible top bar (open by default)
     with st.expander("⚙️ Settings", expanded=True):
