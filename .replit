@@ -1,0 +1,5 @@
+language = "python3"
+run = "streamlit run Quant/Falling_Knife_Web.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true"
+
+[deploy]
+run = ["sh", "-c", "streamlit run Quant/Falling_Knife_Web.py --server.port=$PORT --server.address=0.0.0.0"]
