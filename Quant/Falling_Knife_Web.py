@@ -14,19 +14,32 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with comprehensive dark theme
+# Custom CSS with comprehensive dark theme - injected with highest priority
 st.markdown("""
     <style>
+    /* Force dark theme on ALL elements - highest priority */
+    * {
+        color: #fafafa !important;
+    }
+    
     /* Main app dark theme */
-    .stApp {
+    .stApp, .stAppViewContainer, #root {
         background-color: #0e1117 !important;
         color: #fafafa !important;
     }
     
     /* Main container */
-    .main .block-container {
+    .main .block-container, [data-testid="stAppViewContainer"] {
         background-color: #0e1117 !important;
         color: #fafafa !important;
+    }
+    
+    /* Force all divs to dark */
+    div {
+        background-color: transparent !important;
+    }
+    div[style*="background"] {
+        background-color: #0e1117 !important;
     }
     
     /* Header styling */
@@ -174,13 +187,158 @@ st.markdown("""
         color: #fafafa !important;
     }
     
+    /* Fix any remaining white backgrounds */
+    section[data-testid="stSidebar"] > div {
+        background-color: #1e1e1e !important;
+    }
+    .element-container {
+        color: #fafafa !important;
+    }
+    
+    /* Fix Streamlit's default white elements */
+    .stApp > header {
+        background-color: #0e1117 !important;
+    }
+    div[data-baseweb="base-input"] {
+        background-color: #1e1e1e !important;
+    }
+    div[data-baseweb="select"] {
+        background-color: #1e1e1e !important;
+    }
+    
+    /* Fix table cells */
+    .dataframe td, .dataframe th {
+        color: #fafafa !important;
+        background-color: #1e1e1e !important;
+    }
+    
+    /* Fix expander content text */
+    .streamlit-expanderContent p, .streamlit-expanderContent div {
+        color: #fafafa !important;
+    }
+    
+    /* Fix all Streamlit widgets */
+    [data-baseweb="input"] {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    [data-baseweb="input"] input {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    
+    /* Fix date picker */
+    .stDateInput [data-baseweb="calendar"] {
+        background-color: #1e1e1e !important;
+    }
+    .stDateInput [data-baseweb="popover"] {
+        background-color: #1e1e1e !important;
+    }
+    
+    /* Fix any remaining white backgrounds in containers */
+    #MainMenu {
+        visibility: hidden;
+    }
+    footer {
+        visibility: hidden;
+    }
+    header {
+        visibility: hidden;
+    }
+    
+    /* Fix markdown text colors */
+    .stMarkdown, .stMarkdown * {
+        color: #fafafa !important;
+    }
+    .stMarkdown p, .stMarkdown div, .stMarkdown span, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: #fafafa !important;
+    }
+    
+    /* Fix column containers */
+    [data-testid="column"], [data-testid="stVerticalBlock"] {
+        background-color: transparent !important;
+    }
+    
+    /* Fix ALL white backgrounds - catch everything */
+    [style*="background-color: white"], [style*="background-color: #fff"], [style*="background-color: #ffffff"] {
+        background-color: #1e1e1e !important;
+    }
+    
+    /* Fix Streamlit's internal white elements */
+    .stApp > div, .stApp > div > div {
+        background-color: #0e1117 !important;
+    }
+    
+    /* Fix plotly container backgrounds */
+    .js-plotly-plot {
+        background-color: transparent !important;
+    }
+    
+    /* Fix any table or list backgrounds */
+    table, thead, tbody, tr, td, th, ul, ol, li {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    
     /* Theme selector styling */
     .theme-selector-container {
         display: flex;
         align-items: center;
         height: 100%;
     }
+    
+    /* Override Streamlit's default white with !important everywhere */
+    body {
+        background-color: #0e1117 !important;
+        color: #fafafa !important;
+    }
     </style>
+    <script>
+    // Aggressive dark theme enforcement
+    function forceDarkTheme() {
+        document.querySelectorAll('*').forEach(function(el) {
+            var bg = window.getComputedStyle(el).backgroundColor;
+            var color = window.getComputedStyle(el).color;
+            
+            // Fix white backgrounds
+            if (bg === 'rgb(255, 255, 255)' || bg === 'white' || 
+                bg === 'rgba(255, 255, 255, 1)' || el.style.backgroundColor === 'white') {
+                if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
+                    el.style.backgroundColor = '#1e1e1e';
+                }
+            }
+            
+            // Fix black text
+            if (color === 'rgb(0, 0, 0)' || color === 'black' || 
+                color === 'rgba(0, 0, 0, 1)') {
+                if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE' && 
+                    !el.closest('.js-plotly-plot')) {
+                    el.style.color = '#fafafa';
+                }
+            }
+        });
+    }
+    
+    // Run immediately and on intervals
+    forceDarkTheme();
+    setInterval(forceDarkTheme, 500);
+    
+    // Watch for new elements being added
+    var observer = new MutationObserver(function(mutations) {
+        forceDarkTheme();
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+    });
+    
+    // Also run when page fully loads
+    window.addEventListener('load', forceDarkTheme);
+    document.addEventListener('DOMContentLoaded', forceDarkTheme);
+    </script>
 """, unsafe_allow_html=True)
 
 
@@ -469,6 +627,18 @@ def get_color_theme(theme_name: str) -> dict:
             "bg_color": "rgba(0,0,0,0)",
             "text_color": "#fafafa",
             "grid_color": "rgba(183, 148, 246, 0.1)"
+        },
+        "White Line": {
+            "price_color": "#FFFFFF",
+            "strong_bottom_color": "#FFFFFF",
+            "strong_bottom_border": "#FF0000",
+            "severity3_color": "#FF0000",
+            "severity3_border": "#FFFFFF",
+            "severity2_color": "#FFA500",
+            "severity2_border": "#FFFFFF",
+            "bg_color": "rgba(0,0,0,0)",
+            "text_color": "#FFFFFF",
+            "grid_color": "rgba(255, 255, 255, 0.2)"
         }
     }
     return themes.get(theme_name, themes["Dark Mode (Default)"])
@@ -626,7 +796,7 @@ def main():
         st.markdown('<div style="height: 60px; display: flex; align-items: center; padding-top: 10px;">', unsafe_allow_html=True)
         color_theme = st.selectbox(
             "🎨 Color Theme",
-            ["Dark Mode (Default)", "Blue Ocean", "Green Energy", "Purple Night"],
+            ["Dark Mode (Default)", "Blue Ocean", "Green Energy", "Purple Night", "White Line"],
             index=0,
             help="Choose a color theme for the chart",
             key="theme_selector"
