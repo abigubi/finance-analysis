@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
@@ -14,8 +15,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with comprehensive dark theme - injected with highest priority
-st.markdown("""
+# Inject CSS directly into head for maximum priority
+components.html("""
+<script>
+(function() {
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = `
     <style>
     /* Force dark theme on ALL elements - highest priority */
     * {
@@ -360,38 +366,108 @@ st.markdown("""
         background-color: #0e1117 !important;
         color: #fafafa !important;
     }
-    </style>
-    <script>
+    
+    /* Fix expander behind content */
+    [data-testid="stExpander"] {
+        background-color: #1e1e1e !important;
+    }
+    [data-testid="stExpander"] > div {
+        background-color: #1e1e1e !important;
+    }
+    [data-testid="stExpander"] > div > div {
+        background-color: #1e1e1e !important;
+    }
+    
+    /* Fix date input visibility */
+    [data-baseweb="input"] {
+        background-color: #1e1e1e !important;
+        border: 1px solid #555 !important;
+    }
+    [data-baseweb="input"] input {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    
+    /* Fix calendar completely */
+    [data-baseweb="popover"] {
+        background-color: #1e1e1e !important;
+    }
+    [data-baseweb="calendar"] {
+        background-color: #1e1e1e !important;
+    }
+    [data-baseweb="calendar"] button[aria-disabled="true"] {
+        visibility: hidden !important;
+    }
+    [data-baseweb="calendar"] button {
+        background-color: #2e2e2e !important;
+        color: #fafafa !important;
+        border: 1px solid #333 !important;
+    }
+    
+    /* Fix dataframe completely */
+    [data-testid="stDataFrame"] * {
+        background-color: #1e1e1e !important;
+        color: #fafafa !important;
+    }
+    [data-testid="stDataFrame"] thead * {
+        background-color: #2e2e2e !important;
+        color: #fafafa !important;
+    }
+    `;
+    document.head.appendChild(style);
+    
     // Aggressive dark theme enforcement
     function forceDarkTheme() {
-        document.querySelectorAll('*').forEach(function(el) {
-            var bg = window.getComputedStyle(el).backgroundColor;
-            var color = window.getComputedStyle(el).color;
-            
-            // Fix white backgrounds
-            if (bg === 'rgb(255, 255, 255)' || bg === 'white' || 
-                bg === 'rgba(255, 255, 255, 1)' || el.style.backgroundColor === 'white') {
-                if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
-                    el.style.backgroundColor = '#1e1e1e';
+        // Fix expander backgrounds
+        document.querySelectorAll('[data-testid="stExpander"]').forEach(function(el) {
+            el.style.backgroundColor = '#1e1e1e';
+            var children = el.querySelectorAll('*');
+            children.forEach(function(child) {
+                var bg = window.getComputedStyle(child).backgroundColor;
+                if (bg === 'rgb(255, 255, 255)' || bg === 'white') {
+                    child.style.backgroundColor = '#1e1e1e';
                 }
+            });
+        });
+        
+        // Fix date inputs
+        document.querySelectorAll('[data-baseweb="input"]').forEach(function(el) {
+            el.style.backgroundColor = '#1e1e1e';
+            el.style.border = '1px solid #555';
+            var input = el.querySelector('input');
+            if (input) {
+                input.style.backgroundColor = '#1e1e1e';
+                input.style.color = '#fafafa';
             }
-            
-            // Fix black text
-            if (color === 'rgb(0, 0, 0)' || color === 'black' || 
-                color === 'rgba(0, 0, 0, 1)') {
-                if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE' && 
-                    !el.closest('.js-plotly-plot')) {
-                    el.style.color = '#fafafa';
-                }
-            }
+        });
+        
+        // Fix calendar
+        document.querySelectorAll('[data-baseweb="calendar"] button[aria-disabled="true"]').forEach(function(el) {
+            el.style.visibility = 'hidden';
+        });
+        
+        // Fix dataframe
+        document.querySelectorAll('[data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th').forEach(function(el) {
+            el.style.backgroundColor = '#1e1e1e';
+            el.style.color = '#fafafa';
+        });
+        document.querySelectorAll('[data-testid="stDataFrame"] thead th').forEach(function(el) {
+            el.style.backgroundColor = '#2e2e2e';
+            el.style.color = '#fafafa';
+        });
+        
+        // Fix Plotly legend text
+        document.querySelectorAll('.legendtext').forEach(function(el) {
+            el.style.fill = '#fafafa';
+            el.style.color = '#fafafa';
         });
     }
     
     // Run immediately and on intervals
     forceDarkTheme();
-    setInterval(forceDarkTheme, 500);
+    setInterval(forceDarkTheme, 300);
     
-    // Watch for new elements being added
+    // Watch for new elements
     var observer = new MutationObserver(function(mutations) {
         forceDarkTheme();
     });
@@ -403,11 +479,11 @@ st.markdown("""
         attributeFilter: ['style', 'class']
     });
     
-    // Also run when page fully loads
     window.addEventListener('load', forceDarkTheme);
     document.addEventListener('DOMContentLoaded', forceDarkTheme);
-    </script>
-""", unsafe_allow_html=True)
+})();
+</script>
+""", height=0)
 
 
 def download_price_data(ticker: str, start: str) -> pd.DataFrame:
@@ -830,7 +906,8 @@ def create_plotly_chart(ticker: str, df: pd.DataFrame, theme: dict) -> go.Figure
             bgcolor='rgba(0,0,0,0.5)' if theme["bg_color"] == "rgba(0,0,0,0)" else 'rgba(255,255,255,0.8)',
             bordercolor='rgba(255,255,255,0.2)' if theme["bg_color"] == "rgba(0,0,0,0)" else 'rgba(0,0,0,0.2)',
             borderwidth=1,
-            font=dict(color=theme["text_color"], size=12)
+            font=dict(color="#fafafa", size=12),
+            itemfont=dict(color="#fafafa")
         ),
         xaxis=dict(
             showgrid=True,
