@@ -246,10 +246,13 @@ def identify_panic_clusters(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def plot_panic_detector(ticker: str, df: pd.DataFrame) -> None:
+def plot_panic_detector(ticker: str, df: pd.DataFrame, ax=None, clear_plot=True) -> None:
     """Plot clean, institutional-level panic detector - only cluster centers shown."""
-    plt.style.use("dark_background")
-    fig, ax = plt.subplots(figsize=(14, 7))
+    if ax is None:
+        plt.style.use("dark_background")
+        fig, ax = plt.subplots(figsize=(14, 7))
+    elif clear_plot:
+        ax.clear()
     
     # Price line (yellow/gold)
     ax.plot(df.index, df["Adj Close"], color="yellow", linewidth=2, label="Price", alpha=0.9)
@@ -284,7 +287,7 @@ def plot_panic_detector(ticker: str, df: pd.DataFrame) -> None:
         severity_3 = cluster_centers[(cluster_centers["cluster_severity"] == 3) & ~cluster_centers["long_term_bottom"]]
         severity_2 = cluster_centers[(cluster_centers["cluster_severity"] == 2) & ~cluster_centers["long_term_bottom"]]
         
-        # 1. Long-Term Bottom Candidates - White star ⭐ (strongest signal)
+        # 1. Long-Term Bottom Candidates - White star (strongest signal)
         if len(long_term_bottoms) > 0:
             ax.scatter(
                 long_term_bottoms.index,
@@ -292,7 +295,7 @@ def plot_panic_detector(ticker: str, df: pd.DataFrame) -> None:
                 color="white",
                 s=250,
                 marker="*",
-                label="Strong Bottom ⭐",
+                label="Strong Bottom *",
                 zorder=7,
                 edgecolors='red',
                 linewidths=2
@@ -339,7 +342,10 @@ def plot_panic_detector(ticker: str, df: pd.DataFrame) -> None:
     ax.legend(loc="upper left", fontsize=11, framealpha=0.9, ncol=1)
     
     plt.tight_layout()
-    plt.show()
+    if ax is None or clear_plot:
+        plt.show(block=False)
+    else:
+        plt.draw()
 
 
 def parse_args() -> Tuple[Optional[str], str]:
@@ -362,15 +368,8 @@ def parse_args() -> Tuple[Optional[str], str]:
     return args.ticker, args.start
 
 
-def main() -> None:
-    ticker, start = parse_args()
-    if not ticker:
-        ticker = input("Enter ticker symbol: ").strip().upper()
-        if not ticker:
-            raise ValueError("Ticker symbol is required.")
-    else:
-        ticker = ticker.upper()
-    
+def process_ticker(ticker: str, start: str) -> pd.DataFrame:
+    """Process a single ticker and return the dataframe with panic signals."""
     # Download data
     prices = download_price_data(ticker, start)
     prices.attrs["ticker"] = ticker
@@ -389,31 +388,30 @@ def main() -> None:
     
     # Drop rows with NaN values
     df = df.dropna(subset=["ret", "z_return", "vol20", "vol100", "z_volume"])
-
     
     if df.empty:
         raise ValueError(
             "Not enough data to compute panic signals. Try an earlier start date."
         )
-
     
     # Identify panic clusters (groups nearby panics together)
     df = identify_panic_clusters(df)
     
-    # Plot
-    plot_panic_detector(ticker, df)
-    
-    # Print cluster information (clean, professional output)
+    return df
+
+
+def print_cluster_info(ticker: str, df: pd.DataFrame) -> None:
+    """Print cluster information for a ticker."""
     cluster_centers = df[df["is_cluster_center"]].copy()
     if len(cluster_centers) > 0:
         print("\n" + "="*80)
-        print("Long-Term Bottom Detector - Panic Clusters (Clean Signals Only)")
+        print(f"Long-Term Bottom Detector - Panic Clusters for {ticker.upper()}")
         print("="*80)
         
         # Create readable summary
         def get_signal_type(row):
             if row["long_term_bottom"]:
-                return "⭐ STRONG BOTTOM"
+                return "* STRONG BOTTOM"
             elif row["cluster_severity"] == 3:
                 return "Severity 3 ●"
             else:
@@ -437,7 +435,7 @@ def main() -> None:
         print(f"  Total Panic Clusters:            {len(cluster_centers)}")
         print(f"  Severity 2 Clusters ▲:            {(cluster_centers['cluster_severity'] == 2).sum()}")
         print(f"  Severity 3 Clusters ●:            {(cluster_centers['cluster_severity'] == 3).sum()}")
-        print(f"  ⭐ Strong Bottom Candidates:     {cluster_centers['long_term_bottom'].sum()}")
+        print(f"  * Strong Bottom Candidates:     {cluster_centers['long_term_bottom'].sum()}")
         avg_duration = cluster_centers["Cluster_Duration"].mean()
         print(f"  Average Cluster Duration:        {avg_duration:.1f} days")
         print("="*80)
@@ -445,9 +443,9 @@ def main() -> None:
         # Highlight long-term bottoms
         long_term_bottoms = cluster_centers[cluster_centers["long_term_bottom"]]
         if len(long_term_bottoms) > 0:
-            print("\n" + "🔥"*40)
+            print("\n" + "="*80)
             print("STRONG BOTTOM CANDIDATES (Best Swing Entry Points):")
-            print("🔥"*40)
+            print("="*80)
             for date in long_term_bottoms.tail(10).sort_index(ascending=False).index:
                 row = long_term_bottoms.loc[date]
                 duration = (row["cluster_end"] - row["cluster_start"]).days + 1 if pd.notna(row["cluster_start"]) and pd.notna(row["cluster_end"]) else 1
@@ -458,9 +456,72 @@ def main() -> None:
                 print(f"  Return Z-Score: {row['z_return']:.2f}")
     else:
         print("\n" + "="*80)
-        print("No panic clusters detected (Severity ≥ 2)")
+        print(f"No panic clusters detected for {ticker.upper()} (Severity ≥ 2)")
         print("This means no serious multi-day capitulation events found.")
         print("="*80)
+
+
+def main() -> None:
+    ticker_arg, start = parse_args()
+    
+    # Initialize plot
+    plt.style.use("dark_background")
+    fig, ax = plt.subplots(figsize=(14, 7))
+    plt.ion()  # Turn on interactive mode
+    
+    # Get initial ticker
+    if ticker_arg:
+        ticker = ticker_arg.upper()
+        print(f"Using ticker from command line: {ticker}")
+    else:
+        ticker = input("Enter ticker symbol: ").strip().upper()
+        if not ticker:
+            raise ValueError("Ticker symbol is required.")
+    
+    # Main loop for toggling between tickers
+    while True:
+        try:
+            print(f"\n{'='*80}")
+            print(f"Processing {ticker.upper()}...")
+            print(f"{'='*80}")
+            
+            # Process ticker
+            df = process_ticker(ticker, start)
+            
+            # Update plot
+            plot_panic_detector(ticker, df, ax=ax, clear_plot=True)
+            
+            # Print cluster information
+            print_cluster_info(ticker, df)
+            
+            # Prompt for next ticker
+            print("\n" + "="*80)
+            next_ticker = input(
+                "\nEnter another ticker symbol to analyze (or 'q'/'quit' to exit): "
+            ).strip().upper()
+            
+            if not next_ticker or next_ticker in ['Q', 'QUIT', 'EXIT']:
+                print("\nExiting...")
+                break
+            
+            ticker = next_ticker
+            
+        except ValueError as e:
+            print(f"\nError: {e}")
+            retry = input("Try another ticker? (y/n): ").strip().lower()
+            if retry != 'y':
+                break
+        except KeyboardInterrupt:
+            print("\n\nExiting...")
+            break
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
+            retry = input("Try another ticker? (y/n): ").strip().lower()
+            if retry != 'y':
+                break
+    
+    plt.ioff()  # Turn off interactive mode
+    plt.show(block=True)  # Keep plot open
 
 
 if __name__ == "__main__":
