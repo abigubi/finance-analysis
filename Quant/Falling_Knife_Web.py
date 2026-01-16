@@ -906,8 +906,7 @@ def create_plotly_chart(ticker: str, df: pd.DataFrame, theme: dict) -> go.Figure
             bgcolor='rgba(0,0,0,0.5)' if theme["bg_color"] == "rgba(0,0,0,0)" else 'rgba(255,255,255,0.8)',
             bordercolor='rgba(255,255,255,0.2)' if theme["bg_color"] == "rgba(0,0,0,0)" else 'rgba(0,0,0,0.2)',
             borderwidth=1,
-            font=dict(color="#fafafa", size=12),
-            itemfont=dict(color="#fafafa")
+            font=dict(color="#fafafa", size=12)
         ),
         xaxis=dict(
             showgrid=True,
