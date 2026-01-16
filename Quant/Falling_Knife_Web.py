@@ -15,15 +15,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inject CSS directly into head for maximum priority
-components.html("""
-<script>
-(function() {
-    var style = document.createElement('style');
-    style.type = 'text/css';
-    style.innerHTML = `
-    <style>
+# Inject CSS immediately with st.markdown for instant dark mode
+st.markdown("""
+<style>
     /* Force dark theme on ALL elements - highest priority */
+    html, body {
+        background-color: #0e1117 !important;
+        color: #fafafa !important;
+    }
     * {
         color: #fafafa !important;
     }
@@ -413,9 +412,13 @@ components.html("""
         background-color: #2e2e2e !important;
         color: #fafafa !important;
     }
-    `;
-    document.head.appendChild(style);
-    
+</style>
+""", unsafe_allow_html=True)
+
+# Additional JavaScript for dynamic elements
+components.html("""
+<script>
+(function() {
     // Aggressive dark theme enforcement
     function forceDarkTheme() {
         // Fix expander backgrounds
