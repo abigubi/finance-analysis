@@ -440,6 +440,7 @@ def create_plotly_chart(ticker: str, df: pd.DataFrame, theme: dict) -> go.Figure
         yaxis_title="Price ($)",
         hovermode='x unified',
         template=template,
+        dragmode='pan',  # Default to pan instead of zoom
         height=500,
         plot_bgcolor=theme["bg_color"],
         paper_bgcolor=theme["bg_color"],
@@ -505,7 +506,7 @@ def main():
         with col1:
             ticker = st.text_input("Ticker Symbol", value="AAPL", placeholder="Enter ticker (e.g., AAPL, TSLA, MSFT)", help="Enter any stock ticker symbol").upper().strip()
         with col2:
-            start_date = st.date_input("Start Date", value=datetime(2015, 1, 1), max_value=datetime.today(), help="Start date for historical data")
+            start_date = st.date_input("Start Date", value=datetime(2020, 1, 1), max_value=datetime.today(), help="Start date for historical data")
         with col3:
             end_date = st.date_input("End Date", value=datetime.today(), max_value=datetime.today(), help="End date for historical data")
         with col4:
