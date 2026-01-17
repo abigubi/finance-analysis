@@ -492,14 +492,12 @@ def main():
             key="theme_selector"
         )
     with title_col2:
-        st.markdown('<h1 class="main-header" style="text-align: center; margin-top: -20px; margin-bottom: 0.5rem;">📉 Falling Knife Detector</h1>', unsafe_allow_html=True)
+        st.markdown('<h1 class="main-header" style="text-align: center; margin-top: -20px; margin-bottom: 0rem;">📉 Falling Knife Detector</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-header" style="text-align: center; margin-top: 0rem; margin-bottom: 1rem;">Long-Term Bottom Detection & Panic Signal Analysis</p>', unsafe_allow_html=True)
     with title_col3:
         st.empty()  # Empty column for balance
     
     theme = get_color_theme(color_theme)
-    
-    # Subtitle
-    st.markdown('<p class="sub-header" style="text-align: center; margin-bottom: 1rem;">Long-Term Bottom Detection & Panic Signal Analysis</p>', unsafe_allow_html=True)
     
     with st.expander("⚙️ Settings", expanded=True):
         col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
@@ -715,6 +713,260 @@ def main():
         st.markdown('<div style="text-align: center; padding: 20px;">', unsafe_allow_html=True)
         st.markdown('<h2 style="color: #FFD700;">👈 Enter a ticker symbol in Settings and click "Analyze" to get started!</h2>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Bulk Scanner Section
+    st.markdown("---")
+    st.markdown('<h2 style="text-align: center; color: #FFD700; margin-top: 30px;">🔍 Bulk Ticker Scanner</h2>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; margin-bottom: 20px;">Scan multiple tickers for recent panic signals and strong bottoms</p>', unsafe_allow_html=True)
+    
+    with st.expander("📊 Scanner Settings", expanded=False):
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            tickers_input = st.text_area(
+                "Enter ticker symbols (one per line, or comma/space separated)",
+                placeholder="AAPL\nTSLA\nMSFT\nGOOGL\nNVDA\n...",
+                height=150,
+                help="Enter multiple ticker symbols to scan"
+            )
+        with col2:
+            scanner_days = st.number_input(
+                "Days to look back",
+                min_value=1,
+                max_value=365,
+                value=30,
+                help="Number of days to scan for signals"
+            )
+            scan_button = st.button("🚀 Scan All Tickers", type="primary", use_container_width=True)
+    
+    # Initialize scanner results in session state
+    if 'scanner_results' not in st.session_state:
+        st.session_state.scanner_results = None
+    
+    if scan_button and tickers_input.strip():
+        # Parse tickers
+        tickers_list = []
+        for line in tickers_input.strip().split('\n'):
+            if ',' in line:
+                tickers_list.extend([t.strip().upper() for t in line.split(',') if t.strip()])
+            elif ' ' in line:
+                tickers_list.extend([t.strip().upper() for t in line.split() if t.strip()])
+            elif line.strip():
+                tickers_list.append(line.strip().upper())
+        
+        tickers_list = list(dict.fromkeys([t for t in tickers_list if t]))  # Remove duplicates
+        
+        if tickers_list:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            results = []
+            
+            for i, ticker in enumerate(tickers_list):
+                status_text.text(f"Scanning {i+1}/{len(tickers_list)}: {ticker}...")
+                progress_bar.progress((i + 1) / len(tickers_list))
+                
+                result = scan_ticker_for_scanner(ticker, scanner_days)
+                results.append(result)
+            
+            st.session_state.scanner_results = results
+            status_text.empty()
+            progress_bar.empty()
+    
+    # Display scanner results
+    if st.session_state.scanner_results is not None:
+        results = st.session_state.scanner_results
+        
+        # Filter results
+        signals_only = [r for r in results if r["signals_found"]]
+        errors = [r for r in results if r["status"] == "ERROR"]
+        clean = [r for r in results if r["status"] == "OK" and not r["signals_found"]]
+        
+        # Summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Scanned", len(results))
+        with col2:
+            st.metric("With Signals", len(signals_only), delta=f"{len(signals_only)/len(results)*100:.1f}%")
+        with col3:
+            st.metric("Strong Bottoms", sum(r["strong_bottoms"] for r in signals_only))
+        with col4:
+            st.metric("Panic Signals", sum(r["panic_signals"] for r in signals_only))
+        
+        # Filter options
+        st.markdown("### Filter Results")
+        filter_col1, filter_col2, filter_col3 = st.columns(3)
+        with filter_col1:
+            show_signals_only = st.checkbox("Show only tickers with signals", value=True)
+        with filter_col2:
+            show_strong_bottoms = st.checkbox("Show only Strong Bottoms", value=False)
+        with filter_col3:
+            show_errors = st.checkbox("Show errors", value=False)
+        
+        # Filter results based on options
+        filtered_results = []
+        if show_signals_only:
+            filtered_results = signals_only.copy()
+            if show_strong_bottoms:
+                filtered_results = [r for r in filtered_results if r["strong_bottoms"] > 0]
+        else:
+            filtered_results = results.copy()
+            if show_strong_bottoms:
+                filtered_results = [r for r in filtered_results if r["strong_bottoms"] > 0]
+        
+        if show_errors:
+            filtered_results.extend(errors)
+        
+        # Create display dataframe
+        if filtered_results:
+            display_data = []
+            for result in filtered_results:
+                if result["signals_found"]:
+                    for detail in result["details"]:
+                        display_data.append({
+                            "Ticker": result["ticker"],
+                            "Date": detail["date"],
+                            "Price": detail["price"],
+                            "Signal Type": detail["signal_type"],
+                            "Severity": detail["severity"],
+                            "Duration": detail["duration"],
+                            "Strong Bottom": "Yes" if "STRONG BOTTOM" in detail["signal_type"] else "No"
+                        })
+                elif result["status"] == "ERROR":
+                    display_data.append({
+                        "Ticker": result["ticker"],
+                        "Date": "N/A",
+                        "Price": "N/A",
+                        "Signal Type": f"ERROR: {result.get('error', 'Unknown')}",
+                        "Severity": 0,
+                        "Duration": "N/A",
+                        "Strong Bottom": "N/A"
+                    })
+            
+            if display_data:
+                df_display = pd.DataFrame(display_data)
+                
+                # Add search/filter
+                search_term = st.text_input("🔍 Search ticker or signal type", "")
+                if search_term:
+                    df_display = df_display[
+                        df_display["Ticker"].str.contains(search_term, case=False, na=False) |
+                        df_display["Signal Type"].str.contains(search_term, case=False, na=False)
+                    ]
+                
+                # Display table
+                st.markdown("### Scan Results")
+                st.dataframe(
+                    df_display,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Ticker": st.column_config.TextColumn("Ticker", width="small"),
+                        "Date": st.column_config.TextColumn("Date", width="small"),
+                        "Price": st.column_config.TextColumn("Price", width="small"),
+                        "Signal Type": st.column_config.TextColumn("Signal Type", width="medium"),
+                        "Severity": st.column_config.NumberColumn("Severity", width="small"),
+                        "Duration": st.column_config.TextColumn("Duration", width="small"),
+                        "Strong Bottom": st.column_config.TextColumn("Strong Bottom", width="small")
+                    }
+                )
+                
+                # Download button
+                csv = df_display.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download Results as CSV",
+                    data=csv,
+                    file_name=f"falling_knife_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("No results match the current filters.")
+        else:
+            st.info("No results to display. Adjust your filters or run a new scan.")
+        
+        if errors and not show_errors:
+            st.warning(f"⚠️ {len(errors)} ticker(s) had errors. Enable 'Show errors' to view them.")
+
+
+def scan_ticker_for_scanner(ticker: str, lookback_days: int) -> dict:
+    """Scan a single ticker for signals in the last N days - for bulk scanner."""
+    try:
+        # Calculate start date (need extra days for rolling calculations)
+        end_date = datetime.today()
+        start_date = end_date - timedelta(days=lookback_days + 100)  # Extra buffer for calculations
+        start_str = start_date.strftime("%Y-%m-%d")
+        
+        # Download data
+        prices = download_price_data(ticker, start_str)
+        price_series = select_price_series(prices, ticker)
+        volume_series = select_volume_series(prices, ticker)
+        
+        df = pd.DataFrame({
+            "Adj Close": price_series,
+            "Volume": volume_series
+        })
+        
+        # Calculate signals using Falling_Knife.py logic
+        df = calculate_panic_signals(df)
+        df = identify_panic_clusters(df)
+        
+        # Filter to lookback period
+        cutoff_date = end_date - timedelta(days=lookback_days)
+        df_recent = df[df.index >= cutoff_date]
+        
+        # Find recent cluster centers
+        recent_clusters = df_recent[df_recent["is_cluster_center"]].copy()
+        
+        if len(recent_clusters) == 0:
+            return {
+                "ticker": ticker,
+                "status": "OK",
+                "signals_found": False,
+                "signal_count": 0,
+                "strong_bottoms": 0,
+                "panic_signals": 0,
+                "details": []
+            }
+        
+        # Prepare details
+        details = []
+        for date in recent_clusters.sort_index(ascending=False).index:
+            row = recent_clusters.loc[date]
+            signal_type = "STRONG BOTTOM *" if row["long_term_bottom"] else f"Panic Signal (Severity {int(row['cluster_severity'])})"
+            duration = "N/A"
+            if pd.notna(row.get('cluster_start')) and pd.notna(row.get('cluster_end')):
+                duration = f"{(row['cluster_end'] - row['cluster_start']).days + 1} days"
+            
+            details.append({
+                "date": date.strftime("%Y-%m-%d"),
+                "price": f"${row['Adj Close']:.2f}",
+                "signal_type": signal_type,
+                "severity": int(row['cluster_severity']),
+                "duration": duration
+            })
+        
+        strong_bottoms = recent_clusters['long_term_bottom'].sum()
+        panic_signals = (recent_clusters['cluster_severity'] == 2).sum()
+        
+        return {
+            "ticker": ticker,
+            "status": "OK",
+            "signals_found": True,
+            "signal_count": len(recent_clusters),
+            "strong_bottoms": int(strong_bottoms),
+            "panic_signals": int(panic_signals),
+            "details": details
+        }
+    
+    except Exception as e:
+        return {
+            "ticker": ticker,
+            "status": "ERROR",
+            "error": str(e),
+            "signals_found": False,
+            "signal_count": 0,
+            "strong_bottoms": 0,
+            "panic_signals": 0,
+            "details": []
+        }
 
 
 if __name__ == "__main__":
