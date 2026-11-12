@@ -161,7 +161,14 @@ c=PALETTES[mode]
 st.markdown(f"""<style>.stApp {{background:{c['page']};color:{c['ink']};}}
 .block-container {{max-width:1460px;padding-top:1.6rem;}}
 div[data-testid="stMetric"] {{background:{c['paper']};border:1px solid {c['grid']};
-border-radius:12px;padding:13px;}}</style>""",unsafe_allow_html=True)
+border-radius:12px;padding:13px;}}
+div[data-testid="stSidebar"] {{background:{c['paper']};color:{c['ink']};}}
+div[data-testid="stSidebar"] > div {{background:{c['paper']};}}
+[data-testid="stMarkdownContainer"] p,[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,[data-testid="stMarkdownContainer"] h3,
+div[data-testid="stMetricValue"],div[data-testid="stMetricLabel"] {{color:{c['ink']};}}
+button[data-baseweb="tab"] {{color:{c['ink']};}}
+</style>""",unsafe_allow_html=True)
 
 try:
     symbol=clean_ticker(raw_symbol)
